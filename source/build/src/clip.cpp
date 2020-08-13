@@ -553,7 +553,7 @@ int32_t clipmoveboxtracenum = 3;
 //
 // clipinsidebox
 //
-int clipinsidebox(vec2_t const * const vect, int const wallnum, int const walldist)
+int clipinsidebox(vec2_t *vect, int wallnum, int walldist)
 {
     int const r = walldist << 1;
 
@@ -1090,6 +1090,12 @@ static void clipupdatesector(vec2_t const pos, int16_t * const sectnum, int wall
                 bfirst_search_try(sectlist, sectbitmap, &nsecs, uwal->nextsector);
     }
 
+#ifdef YAX_ENABLE
+    // Workaround: If failed to find a valid sectnum, could be a shallow TROR sector.
+    if (yax_getbunch(*sectnum, YAX_CEILING) != -1)
+        updatesector(pos.x, pos.y, sectnum);
+    else
+#endif
     *sectnum = -1;
 }
 

@@ -127,6 +127,7 @@ enum scripttoken_t
     T_NEWGAMECHOICES,
     T_LOCALIZATION, T_STRING,
     T_TILEFONT, T_CHARACTER,
+    T_KEYCONFIGORDER,
 };
 
 static int32_t lastmodelid = -1, lastvoxid = -1, modelskin = -1, lastmodelskin = -1, seenframe = 0;
@@ -265,8 +266,10 @@ static int32_t Defs_ImportTileFromTexture(char const * const fn, int32_t const t
         if (artstatus < 0)
             return artstatus<<8;
 
-        Bmemcpy(&picanm[tile], &kpzbuf[20], sizeof(picanm_t));
-        tileConvertAnimFormat(tile);
+        uint32_t picanmdisk;
+        Bmemcpy(&picanmdisk, &kpzbuf[20], sizeof(uint32_t));
+        picanmdisk = B_LITTLE32(picanmdisk);
+        tileConvertAnimFormat(tile, picanmdisk);
 
         int32_t const xsiz = B_LITTLE16(B_UNBUF16(&kpzbuf[16]));
         int32_t const ysiz = B_LITTLE16(B_UNBUF16(&kpzbuf[18]));
@@ -409,6 +412,7 @@ static int32_t defsparser(scriptfile *script)
         { "newgamechoices",  T_NEWGAMECHOICES   },
         { "localization",    T_LOCALIZATION     },
         { "tilefont",        T_TILEFONT         },
+        { "keyconfigorder",  T_KEYCONFIGORDER   },
     };
 
     while (1)
@@ -3866,6 +3870,15 @@ static int32_t defsparser(scriptfile *script)
                     }
                 }
             }
+            break;
+        }
+
+        case T_KEYCONFIGORDER: // stub
+        {
+            char *blockend;
+            if (scriptfile_getbraces(script,&blockend))
+                break;
+            script->textptr = blockend+1;
             break;
         }
 

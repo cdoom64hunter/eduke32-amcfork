@@ -43,6 +43,7 @@ droidinput_t droidinput;
 // common positions
 #define MENU_MARGIN_REGULAR 40
 #define MENU_MARGIN_WIDE    32
+#define MENU_MARGIN_AMCSK   36
 #define MENU_MARGIN_CENTER  160
 #define MENU_HEIGHT_CENTER  100
 
@@ -157,6 +158,9 @@ static FORCE_INLINE int32_t Menu_CursorShade(void)
 }
 static void Menu_DrawCursorCommon(int32_t x, int32_t y, int32_t z, int32_t picnum, int32_t ydim_upper = 0, int32_t ydim_lower = ydim-1)
 {
+#ifdef AMC_BUILD
+    z /= 3 ; // downscale cursor icon
+#endif
     rotatesprite_(x, y, z, 0, picnum, Menu_CursorShade(), 0, 2|8, 0, 0, 0, ydim_upper, xdim-1, ydim_lower);
 }
 static void Menu_DrawCursorLeft(int32_t x, int32_t y, int32_t z)
@@ -208,37 +212,49 @@ they effectively stand in for curly braces as struct initializers.
 
 MenuGameplayStemEntry g_MenuGameplayEntries[MAXMENUGAMEPLAYENTRIES];
 
+// j > 0 -> index i remapped to (j-1)
+// j == 0 -> no remapping
+// j == -1 -> index i unmapped
+uint8_t g_KeyEntryOrder[NUMGAMEFUNCTIONS] = {0};
+
 // common font types
 // tilenums are set after namesdyn runs
 
 //                                      emptychar x,y       between x,y         zoom                cursorLeft          cursorCenter        cursorScale         textflags
 //                                      tilenum             shade_deselected    shade_disabled      pal                 pal_selected        pal_deselected      pal_disabled
-MenuFont_t MF_Redfont =               { { 5<<16, 15<<16 },  { 0, 0 }, 0,        65536,              20<<16,             110<<16,            65536,              TEXT_BIGALPHANUM | TEXT_UPPERCASE,
+MenuFont_t MF_Redfont =               { { 5<<16, 15<<16 },  { 0, 0 }, 0,        65536,              20<<16,             128<<16,            65536,              TEXT_BIGALPHANUM | TEXT_UPPERCASE,
                                         -1,                 10,                 0,                  0,                  0,                  0,                  1,
                                         0,                  0,                  1 };
-MenuFont_t MF_Bluefont =              { { 5<<16, 7<<16 },   { 0, 0 }, 0,        65536,              10<<16,             110<<16,            32768,              0,
+MenuFont_t MF_Bluefont =              { { 5<<16, 7<<16 },   { 0, 0 }, 0,        65536,              10<<16,             128<<16,            32768,              0,
                                         -1,                 10,                 0,                  0,                  10,                 10,                 16,
                                         0,                  0,                  16 };
-MenuFont_t MF_Minifont =              { { 4<<16, 5<<16 },   { 1<<16, 1<<16 },0, 65536,              10<<16,             110<<16,            32768,              0,
+MenuFont_t MF_Minifont =              { { 4<<16, 5<<16 },   { 1<<16, 1<<16 },0, 65536,              10<<16,             128<<16,            32768,              0,
                                         -1,                 10,                 0,                  0,                  2,                  2,                  0,
                                         0,                  0,                  16 };
 
 
-static MenuMenuFormat_t MMF_Top_Main =             { {  MENU_MARGIN_CENTER<<16, 55<<16, }, -(170<<16) };
+
+static MenuMenuFormat_t MMF_Top_Main =             { {  MENU_MARGIN_CENTER<<16, 60<<16, }, -(190<<16) };
 static MenuMenuFormat_t MMF_Top_Episode =          { {  MENU_MARGIN_CENTER<<16, 48<<16, }, -(190<<16) };
 static MenuMenuFormat_t MMF_Top_NewGameCustom =    { {  MENU_MARGIN_CENTER<<16, 48<<16, }, -(190<<16) };
 static MenuMenuFormat_t MMF_Top_NewGameCustomSub = { {  MENU_MARGIN_CENTER<<16, 48<<16, }, -(190<<16) };
+
+#ifdef AMC_BUILD
+static MenuMenuFormat_t MMF_Top_Skill =            { {  MENU_MARGIN_AMCSK<<16, 60<<16, }, -(190<<16) };
+#else
 static MenuMenuFormat_t MMF_Top_Skill =            { {  MENU_MARGIN_CENTER<<16, 58<<16, }, -(190<<16) };
-static MenuMenuFormat_t MMF_Top_Options =          { {  MENU_MARGIN_CENTER<<16, 38<<16, }, -(190<<16) };
+#endif
+
+static MenuMenuFormat_t MMF_Top_Options =          { {  MENU_MARGIN_CENTER<<16, 52<<16, }, -(190<<16) };
 static MenuMenuFormat_t MMF_Top_Joystick_Network = { {  MENU_MARGIN_CENTER<<16, 70<<16, }, -(190<<16) };
-static MenuMenuFormat_t MMF_BigOptions =           { {    MENU_MARGIN_WIDE<<16, 38<<16, }, -(190<<16) };
-static MenuMenuFormat_t MMF_SmallOptions =         { {    MENU_MARGIN_WIDE<<16, 37<<16, },    170<<16 };
+static MenuMenuFormat_t MMF_BigOptions =           { {    MENU_MARGIN_WIDE<<16, 45<<16, }, -(190<<16) };
+static MenuMenuFormat_t MMF_SmallOptions =         { {    MENU_MARGIN_WIDE<<16, 60<<16, },    170<<16 };
 static MenuMenuFormat_t MMF_Macros =               { {                  26<<16, 40<<16, },    160<<16 };
 static MenuMenuFormat_t MMF_SmallOptionsNarrow  =  { { MENU_MARGIN_REGULAR<<16, 38<<16, }, -(190<<16) };
-static MenuMenuFormat_t MMF_KeyboardSetupFuncs =   { {                  50<<16, 34<<16, },    151<<16 };
-static MenuMenuFormat_t MMF_MouseJoySetupBtns =    { {                  76<<16, 34<<16, },    143<<16 };
+static MenuMenuFormat_t MMF_KeyboardSetupFuncs =   { {                  50<<16, 42<<16, },    166<<16 };
+static MenuMenuFormat_t MMF_MouseJoySetupBtns =    { {                  76<<16, 42<<16, },    150<<16 };
 static MenuMenuFormat_t MMF_FuncList =             { {                 100<<16, 51<<16, },    152<<16 };
-static MenuMenuFormat_t MMF_ColorCorrect =         { { MENU_MARGIN_REGULAR<<16, 86<<16, },    190<<16 };
+static MenuMenuFormat_t MMF_ColorCorrect =         { { MENU_MARGIN_REGULAR<<16, 62<<16, },    190<<16 };
 static MenuMenuFormat_t MMF_BigSliders =           { {    MENU_MARGIN_WIDE<<16, 37<<16, },    190<<16 };
 static MenuMenuFormat_t MMF_LoadSave =             { {                 200<<16, 49<<16, },    145<<16 };
 static MenuMenuFormat_t MMF_NetSetup =             { {                  36<<16, 38<<16, },    190<<16 };
@@ -246,26 +262,26 @@ static MenuMenuFormat_t MMF_FileSelectLeft =       { {                  40<<16, 
 static MenuMenuFormat_t MMF_FileSelectRight =      { {                 164<<16, 45<<16, },    162<<16 };
 
 static MenuEntryFormat_t MEF_Null =             {     0,      0,          0 };
-static MenuEntryFormat_t MEF_MainMenu =         { 4<<16,      0,          0 };
+static MenuEntryFormat_t MEF_MainMenu =         { 7<<16,      0,          0 };
 static MenuEntryFormat_t MEF_OptionsMenu =      { 7<<16,      0,          0 };
 static MenuEntryFormat_t MEF_LeftMenu =         { 7<<16,      0,    120<<16 };
 static MenuEntryFormat_t MEF_CenterMenu =       { 7<<16,      0,          0 };
-static MenuEntryFormat_t MEF_BigOptions_Apply = { 4<<16, 16<<16, -(260<<16) };
-static MenuEntryFormat_t MEF_BigOptionsRt =     { 4<<16,      0, -(260<<16) };
-static MenuEntryFormat_t MEF_BigOptionsRtSections = { 3<<16,      0, -(260<<16) };
+static MenuEntryFormat_t MEF_BigOptions_Apply = { 5<<16, 16<<16, -(260<<16) };
+static MenuEntryFormat_t MEF_BigOptionsRt =     { 5<<16,      0, -(260<<16) };
+static MenuEntryFormat_t MEF_BigOptionsRtSections = { 4<<16,      0, -(260<<16) };
 #if defined USE_OPENGL || !defined EDUKE32_ANDROID_MENU
-static MenuEntryFormat_t MEF_SmallOptions =     { 1<<16,      0, -(260<<16) };
+static MenuEntryFormat_t MEF_SmallOptions =     { 3<<16,      0, -(260<<16) };
 #endif
-static MenuEntryFormat_t MEF_BigCheats =        { 3<<16,      0, -(260<<16) };
-static MenuEntryFormat_t MEF_Cheats =           { 2<<16,      0, -(260<<16) };
+static MenuEntryFormat_t MEF_BigCheats =        { 4<<16,      0, -(260<<16) };
+static MenuEntryFormat_t MEF_Cheats =           { 3<<16,      0, -(260<<16) };
 static MenuEntryFormat_t MEF_PlayerNarrow =     { 1<<16,      0,     90<<16 };
 static MenuEntryFormat_t MEF_Macros =           { 2<<16,     -1,    268<<16 };
-static MenuEntryFormat_t MEF_VideoSetup =       { 4<<16,      0,    168<<16 };
-static MenuEntryFormat_t MEF_VideoSetup_Apply = { 4<<16, 16<<16,    168<<16 };
-static MenuEntryFormat_t MEF_KBFuncList =       { 3<<16,      0, -(225<<16) };
-static MenuEntryFormat_t MEF_FuncList =         { 3<<16,      0, -(170<<16) };
-static MenuEntryFormat_t MEF_ColorCorrect =     { 2<<16,      0, -(240<<16) };
-static MenuEntryFormat_t MEF_BigSliders =       { 2<<16,      0, -(260<<16) };
+static MenuEntryFormat_t MEF_VideoSetup =       { 5<<16,      0,    168<<16 };
+static MenuEntryFormat_t MEF_VideoSetup_Apply = { 5<<16, 16<<16,    168<<16 };
+static MenuEntryFormat_t MEF_KBFuncList =       { 4<<16,      0, -(225<<16) };
+static MenuEntryFormat_t MEF_FuncList =         { 4<<16,      0, -(170<<16) };
+static MenuEntryFormat_t MEF_ColorCorrect =     { 5<<16,      0, -(240<<16) };
+static MenuEntryFormat_t MEF_BigSliders =       { 4<<16,      0, -(260<<16) };
 static MenuEntryFormat_t MEF_LoadSave =         { 2<<16,     -1,     78<<16 };
 static MenuEntryFormat_t MEF_NetSetup =         { 4<<16,      0,    112<<16 };
 static MenuEntryFormat_t MEF_NetSetup_Confirm = { 4<<16, 16<<16,    112<<16 };
@@ -409,13 +425,21 @@ MenuEntry_t ME_NEWGAMECUSTOMSUBENTRIES[MAXMENUGAMEPLAYENTRIES][MAXMENUGAMEPLAYEN
 static MenuEntry_t *MEL_NEWGAMECUSTOM[MAXMENUGAMEPLAYENTRIES];
 static MenuEntry_t *MEL_NEWGAMECUSTOMSUB[MAXMENUGAMEPLAYENTRIES];
 
+#ifdef AMC_BUILD
+static MenuEntry_t ME_SKILL_TEMPLATE = MAKE_MENUENTRY( NULL, &MF_Redfont, &MEF_LeftMenu, &MEO_NULL, Link );
+#else
 static MenuEntry_t ME_SKILL_TEMPLATE = MAKE_MENUENTRY( NULL, &MF_Redfont, &MEF_CenterMenu, &MEO_NULL, Link );
+#endif
+
 static MenuEntry_t ME_SKILL[MAXSKILLS];
 static MenuEntry_t *MEL_SKILL[MAXSKILLS];
 
 #ifdef EDUKE32_RETAIL_MENU
 static MenuLink_t MEO_GAMESETUP_SAVESETUP = { MENU_SAVESETUP, MA_Advance, };
 static MenuEntry_t ME_GAMESETUP_SAVESETUP = MAKE_MENUENTRY( "Save setup", &MF_Redfont, &MEF_BigOptionsRt, &MEO_GAMESETUP_SAVESETUP, Link );
+#elif defined AMC_BUILD
+static MenuLink_t MEO_GAMESETUP_SAVESETUP = { MENU_SAVESETUP, MA_Advance, };
+static MenuEntry_t ME_GAMESETUP_SAVESETUP = MAKE_MENUENTRY( "Save setup", &MF_Redfont, &MEF_CenterMenu, &MEO_GAMESETUP_SAVESETUP, Link );
 #endif
 
 #if defined STARTUP_SETUP_WINDOW && !defined EDUKE32_RETAIL_MENU
@@ -488,7 +512,7 @@ static MenuEntry_t *MEL_GAMESETUP[] = {
 };
 #endif
 
-#ifndef EDUKE32_RETAIL_MENU
+#if !defined EDUKE32_RETAIL_MENU && !defined AMC_BUILD
 MAKE_MENU_TOP_ENTRYLINK( "Game Setup", MEF_OptionsMenu, OPTIONS_GAMESETUP, MENU_GAMESETUP );
 #endif
 MAKE_MENU_TOP_ENTRYLINK( "Sound Setup", MEF_OptionsMenu, OPTIONS_SOUNDSETUP, MENU_SOUND );
@@ -725,22 +749,24 @@ static MenuEntry_t ME_CheatCodes[] = {
 };
 
 static MenuEntry_t *MEL_OPTIONS[] = {
-#ifndef EDUKE32_RETAIL_MENU
+#if !defined EDUKE32_RETAIL_MENU && !defined AMC_BUILD
     &ME_OPTIONS_GAMESETUP,
 #endif
     &ME_OPTIONS_DISPLAYSETUP,
     &ME_OPTIONS_SOUNDSETUP,
 #ifndef EDUKE32_ANDROID_MENU
-#ifndef EDUKE32_RETAIL_MENU
+#if !defined EDUKE32_RETAIL_MENU && !defined AMC_BUILD
     &ME_OPTIONS_PLAYERSETUP,
 #endif
     &ME_OPTIONS_CONTROLS,
 #else
     &ME_OPTIONS_TOUCHSETUP,
 #endif
-#ifdef EDUKE32_RETAIL_MENU
+#if defined EDUKE32_RETAIL_MENU
     &ME_GAMESETUP_SAVESETUP,
     &ME_OPTIONS_CHEATS
+#elif defined AMC_BUILD
+        &ME_GAMESETUP_SAVESETUP
 #endif
 };
 
@@ -847,7 +873,7 @@ static MenuEntry_t *MEL_DISPLAYSETUP_GL_POLYMER[] = {
 static char const MenuKeyNone[] = "  -";
 static char const *MEOSN_Keys[NUMKEYS];
 
-static MenuCustom2Col_t MEO_KEYBOARDSETUPFUNCS_TEMPLATE = { { NULL, NULL, }, MEOSN_Keys, &MF_Minifont, NUMKEYS, 54<<16, 0 };
+static MenuCustom2Col_t MEO_KEYBOARDSETUPFUNCS_TEMPLATE = { { NULL, NULL, }, MEOSN_Keys, &MF_Minifont, NUMKEYS, 54<<16, 0, 0};
 static MenuCustom2Col_t MEO_KEYBOARDSETUPFUNCS[NUMGAMEFUNCTIONS];
 static MenuEntry_t ME_KEYBOARDSETUPFUNCS_TEMPLATE = MAKE_MENUENTRY( NULL, &MF_Minifont, &MEF_KBFuncList, &MEO_KEYBOARDSETUPFUNCS_TEMPLATE, Custom2Col );
 static MenuEntry_t ME_KEYBOARDSETUPFUNCS[NUMGAMEFUNCTIONS];
@@ -857,13 +883,17 @@ static MenuLink_t MEO_KEYBOARDSETUP_KEYS = { MENU_KEYBOARDKEYS, MA_Advance, };
 static MenuEntry_t ME_KEYBOARDSETUP_KEYS = MAKE_MENUENTRY( "Configure Keys", &MF_Redfont, &MEF_CenterMenu, &MEO_KEYBOARDSETUP_KEYS, Link );
 static MenuLink_t MEO_KEYBOARDSETUP_RESET = { MENU_KEYSRESETVERIFY, MA_None, };
 static MenuEntry_t ME_KEYBOARDSETUP_RESET = MAKE_MENUENTRY( "Reset To Defaults", &MF_Redfont, &MEF_CenterMenu, &MEO_KEYBOARDSETUP_RESET, Link );
+#ifndef AMC_BUILD
 static MenuLink_t MEO_KEYBOARDSETUP_RESETCLASSIC = { MENU_KEYSCLASSICVERIFY, MA_None, };
 static MenuEntry_t ME_KEYBOARDSETUP_RESETCLASSIC = MAKE_MENUENTRY( "Reset To Classic", &MF_Redfont, &MEF_CenterMenu, &MEO_KEYBOARDSETUP_RESETCLASSIC, Link );
+#endif
 
 static MenuEntry_t *MEL_KEYBOARDSETUP[] = {
     &ME_KEYBOARDSETUP_KEYS,
     &ME_KEYBOARDSETUP_RESET,
+#ifndef AMC_BUILD
     &ME_KEYBOARDSETUP_RESETCLASSIC,
+#endif
 };
 
 
@@ -1226,7 +1256,7 @@ static MenuEntry_t ME_SOUND_VOLUME_FX = MAKE_MENUENTRY( s_Volume, &MF_Redfont, &
 static MenuRangeInt32_t MEO_SOUND_VOLUME_MUSIC = MAKE_MENURANGE( &ud.config.MusicVolume, &MF_Redfont, 0, 255, 0, 33, 2 );
 static MenuEntry_t ME_SOUND_VOLUME_MUSIC = MAKE_MENUENTRY( s_Volume, &MF_Redfont, &MEF_BigOptions_Apply, &MEO_SOUND_VOLUME_MUSIC, RangeInt32 );
 
-#ifndef EDUKE32_STANDALONE
+#if not (defined(EDUKE32_STANDALONE) || defined(AMC_BUILD))
 static MenuOption_t MEO_SOUND_DUKETALK = MAKE_MENUOPTION(&MF_Redfont, &MEOS_NoYes, NULL);
 static MenuEntry_t ME_SOUND_DUKETALK = MAKE_MENUENTRY( "Duke talk:", &MF_Redfont, &MEF_BigOptionsRt, &MEO_SOUND_DUKETALK, Option );
 #else
@@ -1796,13 +1826,20 @@ void Menu_Init(void)
             if (MenuGameFuncs[i][j] == '_')
                 MenuGameFuncs[i][j] = ' ';
 
-        if (gamefunctions[i][0] != '\0')
+        if (g_KeyEntryOrder[i] != 255)
         {
-            MEOSN_Gamefuncs[k] = MenuGameFuncs[i];
-            MEOSV_Gamefuncs[k] = i;
-            ++k;
+            if (g_KeyEntryOrder[i] > 0) j = g_KeyEntryOrder[i] - 1;
+            else j = i;
+
+            if (gamefunctions[j][0] != '\0')
+            {
+                MEOSN_Gamefuncs[k] = MenuGameFuncs[j];
+                MEOSV_Gamefuncs[k] = j;
+                ++k;
+            }
         }
     }
+    MEOS_Gamefuncs.features |= 4; //unsorted
     MEOS_Gamefuncs.numOptions = k;
 
     for (i = 1; i < NUMKEYS-1; ++i)
@@ -1984,7 +2021,22 @@ void Menu_Init(void)
         MEO_KEYBOARDSETUPFUNCS[i] = MEO_KEYBOARDSETUPFUNCS_TEMPLATE;
         MEO_KEYBOARDSETUPFUNCS[i].column[0] = &ud.config.KeyboardKeys[i][0];
         MEO_KEYBOARDSETUPFUNCS[i].column[1] = &ud.config.KeyboardKeys[i][1];
+        MEO_KEYBOARDSETUPFUNCS[i].gameFuncIndex = i;
     }
+
+    // reorder keyboard control menu entries based on DEF
+    MenuEntry_t* tempkeyboardfuncs[NUMGAMEFUNCTIONS];
+    for (i = 0; i < NUMGAMEFUNCTIONS; ++i)
+    {
+        if (g_KeyEntryOrder[i] > 0 && g_KeyEntryOrder[i] < 255)
+            tempkeyboardfuncs[i] = MEL_KEYBOARDSETUPFUNCS[g_KeyEntryOrder[i] - 1];
+        else if (g_KeyEntryOrder[i] == 255)
+            tempkeyboardfuncs[i] = NULL;
+        else
+            tempkeyboardfuncs[i] = MEL_KEYBOARDSETUPFUNCS[i];
+    }
+    Bmemcpy(MEL_KEYBOARDSETUPFUNCS, tempkeyboardfuncs, NUMGAMEFUNCTIONS * sizeof(MenuEntry_t*));
+
     M_KEYBOARDKEYS.numEntries = NUMGAMEFUNCTIONS;
     for (i = 0; i < MENUMOUSEFUNCTIONS; ++i)
     {
@@ -2451,7 +2503,11 @@ static void Menu_PreDrawBackground(MenuID_t cm, const vec2_t origin)
     case MENU_SAVE:
         if (FURY)
             break;
+#ifdef AMC_BUILD
+        break;
+#else
         fallthrough__;
+#endif
     case MENU_CREDITS4:
     case MENU_CREDITS5:
         Menu_DrawBackground(origin);
@@ -2512,6 +2568,7 @@ static void Menu_PreDraw(MenuID_t cm, MenuEntry_t *entry, const vec2_t origin)
         if (FURY)
             break;
 
+#ifndef AMC_BUILD
         // center panel
         rotatesprite_fs(origin.x + (120<<16), origin.y + (32<<16), 16384, 0, 3290, 0, 0, 2|8|16);
         int32_t const statusTile = sbartile();
@@ -2522,6 +2579,7 @@ static void Menu_PreDraw(MenuID_t cm, MenuEntry_t *entry, const vec2_t origin)
 
         // right panel
         rotatesprite_fs(origin.x + (200<<16), origin.y + (32<<16), 16384, 0, LOADSCREEN, 0, 0, 2|8|16);
+#endif
         break;
     }
 #endif
@@ -3119,10 +3177,10 @@ static void Menu_PreInput(MenuEntry_t *entry)
         {
             auto column = (MenuCustom2Col_t*)entry->entry;
             char key[2];
-            key[0] = ud.config.KeyboardKeys[M_KEYBOARDKEYS.currentEntry][0];
-            key[1] = ud.config.KeyboardKeys[M_KEYBOARDKEYS.currentEntry][1];
+            key[0] = ud.config.KeyboardKeys[column->gameFuncIndex][0];
+            key[1] = ud.config.KeyboardKeys[column->gameFuncIndex][1];
             *column->column[M_KEYBOARDKEYS.currentColumn] = 0xff;
-            CONFIG_MapKey(M_KEYBOARDKEYS.currentEntry, ud.config.KeyboardKeys[M_KEYBOARDKEYS.currentEntry][0], key[0], ud.config.KeyboardKeys[M_KEYBOARDKEYS.currentEntry][1], key[1]);
+            CONFIG_MapKey(M_KEYBOARDKEYS.currentEntry, ud.config.KeyboardKeys[column->gameFuncIndex][0], key[0], ud.config.KeyboardKeys[column->gameFuncIndex][1], key[1]);
             S_PlaySound(KICK_HIT);
             KB_ClearKeyDown(sc_Delete);
         }
@@ -3178,14 +3236,14 @@ static int32_t Menu_PreCustom2ColScreen(MenuEntry_t *entry)
         if (sc != sc_None)
         {
             char key[2];
-            key[0] = ud.config.KeyboardKeys[M_KEYBOARDKEYS.currentEntry][0];
-            key[1] = ud.config.KeyboardKeys[M_KEYBOARDKEYS.currentEntry][1];
+            key[0] = ud.config.KeyboardKeys[column->gameFuncIndex][0];
+            key[1] = ud.config.KeyboardKeys[column->gameFuncIndex][1];
 
             S_PlaySound(PISTOL_BODYHIT);
 
             *column->column[M_KEYBOARDKEYS.currentColumn] = sc;
 
-            CONFIG_MapKey(M_KEYBOARDKEYS.currentEntry, ud.config.KeyboardKeys[M_KEYBOARDKEYS.currentEntry][0], key[0], ud.config.KeyboardKeys[M_KEYBOARDKEYS.currentEntry][1], key[1]);
+            CONFIG_MapKey(M_KEYBOARDKEYS.currentEntry, ud.config.KeyboardKeys[column->gameFuncIndex][0], key[0], ud.config.KeyboardKeys[column->gameFuncIndex][1], key[1]);
 
             KB_ClearKeyDown(sc);
 
@@ -5003,6 +5061,15 @@ static int32_t Menu_FindOptionBinarySearch(MenuOption_t *object, const int32_t q
     return Menu_FindOptionBinarySearch(object, query, searchstart, searchend);
 }
 
+static int32_t Menu_FindOptionLinearSearch(MenuOption_t *object, const int32_t query, uint16_t searchstart, uint16_t searchend)
+{
+    for (int i = searchstart; i < searchend; ++i)
+        if (object->options->optionValues[i] == query)
+            return i;
+
+    return -1;
+}
+
 static int32_t Menu_MouseOutsideBounds(vec2_t const * const pos, const int32_t x, const int32_t y, const int32_t width, const int32_t height)
 {
     return pos->x < x || pos->x >= x + width || pos->y < y || pos->y >= y + height;
@@ -5282,8 +5349,14 @@ static int32_t M_RunMenu_Menu(Menu_t *cm, MenuMenu_t *menu, MenuEntry_t *current
                         break;
                     case Option:
                     {
+                        int32_t currentOption;
                         auto object = (MenuOption_t*)entry->entry;
-                        int32_t currentOption = Menu_FindOptionBinarySearch(object, object->data == NULL ? Menu_EntryOptionSource(entry, object->currentOption) : *object->data, 0, object->options->numOptions);
+
+                        // if unsorted, use linear search; otherwise use binary search
+                        if (object->options->features & 4)
+                            currentOption = Menu_FindOptionLinearSearch(object, object->data == NULL ? Menu_EntryOptionSource(entry, object->currentOption) : *object->data, 0, object->options->numOptions);
+                        else
+                            currentOption = Menu_FindOptionBinarySearch(object, object->data == NULL ? Menu_EntryOptionSource(entry, object->currentOption) : *object->data, 0, object->options->numOptions);
 
                         if (currentOption >= 0)
                             object->currentOption = currentOption;

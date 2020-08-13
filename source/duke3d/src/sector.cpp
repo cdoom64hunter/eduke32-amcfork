@@ -941,7 +941,7 @@ REDODOOR:
             if (j >= 0)
             {
                 for (SPRITES_OF(STAT_EFFECTOR, i))
-                    if (tag == (sector[SECT(i)].lotag & 0x8000u) && SLT(i) == SE_11_SWINGING_DOOR && sprite[j].hitag == SHT(i) && (T5(i)||T6(i)))
+                    if (tag == (sector[SECT(i)].lotag & 0x8000u) && SLT(i) == SE_11_SWINGING_DOOR && sprite[j].hitag == SHT(i) && T5(i))
                         return;
 
                 int soundPlayed = 0;
@@ -2366,7 +2366,11 @@ void A_DamageObject_Duke3D(int spriteNum, int const dmgSrc)
             if ((PN(spriteNum) != DRONE) && (PN(spriteNum) != ROTATEGUN) && (PN(spriteNum) != COMMANDER)
                 && (PN(spriteNum) < GREENSLIME || PN(spriteNum) > GREENSLIME + 7))
                 if (sprite[dmgSrc].picnum != FREEZEBLAST)
+#ifdef AMC_BUILD
+                    if (A_CheckSpriteFlags(spriteNum, SFLAG_HURTSPAWNBLOOD)) // Don't spawn hardcoded blood with SFLAG_BADGUY enemies
+#else
                     if (!A_CheckSpriteFlags(spriteNum, SFLAG_BADGUY) || A_CheckSpriteFlags(spriteNum, SFLAG_HURTSPAWNBLOOD))
+#endif
                     {
                         int const newSprite = A_Spawn(dmgSrc, JIBS6);
                         sprite[newSprite].z += ZOFFSET6;
@@ -2381,7 +2385,11 @@ void A_DamageObject_Duke3D(int spriteNum, int const dmgSrc)
 
             if (damageOwner >= 0 && sprite[damageOwner].picnum == APLAYER && PN(spriteNum) != ROTATEGUN && PN(spriteNum) != DRONE)
                 if (g_player[P_Get(damageOwner)].ps->curr_weapon == SHOTGUN_WEAPON)
+#ifdef AMC_BUILD
+                    if (A_CheckSpriteFlags(spriteNum, SFLAG_HURTSPAWNBLOOD)) // Don't spawn hardcoded blood with SFLAG_BADGUY enemies
+#else
                     if (!A_CheckSpriteFlags(spriteNum, SFLAG_BADGUY) || A_CheckSpriteFlags(spriteNum, SFLAG_HURTSPAWNBLOOD))
+#endif
                     {
                         A_Shoot(spriteNum, BLOODSPLAT3);
                         A_Shoot(spriteNum, BLOODSPLAT1);

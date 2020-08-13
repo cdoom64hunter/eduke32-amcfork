@@ -3265,38 +3265,29 @@ void P_GetInput(int const playerNum)
     localInput.extbits |= BUTTON(gamefunc_Turn_Right)<<5;
     localInput.extbits |= BUTTON(gamefunc_Alt_Fire)<<6;
 
-    int const movementLocked = P_CheckLockedMovement(playerNum);
 
-    if ((ud.scrollmode && ud.overhead_on) || (movementLocked & IL_NOTHING) == IL_NOTHING)
+    if (ud.scrollmode && ud.overhead_on)
     {
-        if (ud.scrollmode && ud.overhead_on)
-        {
-            ud.folfvel = input.fvel;
-            ud.folavel = fix16_to_int(input.q16avel);
-        }
+        ud.folfvel = input.fvel;
+        ud.folavel = fix16_to_int(input.q16avel);
 
         localInput.fvel = localInput.svel = 0;
         localInput.q16avel = localInput.q16horz = 0;
     }
     else
     {
-        if (!(movementLocked & IL_NOMOVE))
-        {
-            localInput.fvel = clamp(localInput.fvel + input.fvel, -MAXVEL, MAXVEL);
-            localInput.svel = clamp(localInput.svel + input.svel, -MAXSVEL, MAXSVEL);
-        }
+        int const movementLocked = P_CheckLockedMovement(playerNum);
 
         if (!(movementLocked & IL_NOANGLE))
-        {
-            localInput.q16avel = fix16_sadd(localInput.q16avel, input.q16avel);
             pPlayer->q16ang    = fix16_sadd(pPlayer->q16ang, input.q16avel) & 0x7FFFFFF;
-        }
 
         if (!(movementLocked & IL_NOHORIZ))
-        {
-            localInput.q16horz = fix16_clamp(fix16_sadd(localInput.q16horz, input.q16horz), F16(-MAXHORIZVEL), F16(MAXHORIZVEL));
             pPlayer->q16horiz  = fix16_clamp(fix16_sadd(pPlayer->q16horiz, input.q16horz), F16(HORIZ_MIN), F16(HORIZ_MAX));
-        }
+
+        localInput.fvel = clamp(localInput.fvel + input.fvel, -MAXVEL, MAXVEL);
+        localInput.svel = clamp(localInput.svel + input.svel, -MAXSVEL, MAXSVEL);
+        localInput.q16horz = fix16_clamp(fix16_sadd(localInput.q16horz, input.q16horz), F16(-MAXHORIZVEL), F16(MAXHORIZVEL));
+        localInput.q16avel = fix16_sadd(localInput.q16avel, input.q16avel);
     }
 
     // A horiz diff of 128 equal 45 degrees, so we convert horiz to 1024 angle units
@@ -4936,20 +4927,19 @@ void P_ProcessInput(int playerNum)
     if ((lowZhit & 49152) == 16384 && sectorLotag == 1 && trueFloorDist > PHEIGHT + ZOFFSET2)
         sectorLotag = 0;
 
+    actor[pPlayer->i].floorz   = floorZ;
+    actor[pPlayer->i].ceilingz = ceilZ;
+
     if ((highZhit & 49152) == 49152)
     {
         int const spriteNum = highZhit & (MAXSPRITES-1);
 
-        if ((spriteNum != pPlayer->i && sprite[spriteNum].z + PMINHEIGHT > pPlayer->pos.z)
-            || (sprite[spriteNum].statnum == STAT_ACTOR && sprite[spriteNum].extra >= 0))
+        if (sprite[spriteNum].statnum == STAT_ACTOR && sprite[spriteNum].extra >= 0)
         {
             highZhit = 0;
             ceilZ    = pPlayer->truecz;
         }
     }
-
-    actor[pPlayer->i].floorz   = floorZ;
-    actor[pPlayer->i].ceilingz = ceilZ;
 
     if ((lowZhit & 49152) == 49152)
     {
@@ -5086,6 +5076,9 @@ void P_ProcessInput(int playerNum)
     const uint8_t *const weaponFrame      = &pPlayer->kickback_pic;
     int                  floorZOffset     = 40;
     int const            playerShrunk     = (pSprite->yrepeat < 32);
+#ifdef AMC_BUILD
+    int const            playerSlide      = (pSprite->yrepeat == 35); // regular player yrepeat is 36
+#endif
     vec3_t const         backupPos        = pPlayer->opos;
 
     if (pPlayer->on_crane >= 0)
@@ -5146,11 +5139,16 @@ void P_ProcessInput(int playerNum)
                 {
                     if (pPlayer->on_ground == 1)
                     {
-                        if (pPlayer->dummyplayersprite < 0)
-                            pPlayer->dummyplayersprite = A_Spawn(pPlayer->i,PLAYERONWATER);
+#ifdef YAX_ENABLE
+                        if (yax_getbunch(pPlayer->cursectnum, YAX_FLOOR) == -1)
+#endif
+                        {
+                            if (pPlayer->dummyplayersprite < 0)
+                                pPlayer->dummyplayersprite = A_Spawn(pPlayer->i,PLAYERONWATER);
 
-                        sprite[pPlayer->dummyplayersprite].cstat |= 32768;
-                        sprite[pPlayer->dummyplayersprite].pal = sprite[pPlayer->i].pal;
+                            sprite[pPlayer->dummyplayersprite].cstat |= 32768;
+                            sprite[pPlayer->dummyplayersprite].pal = sprite[pPlayer->i].pal;
+                        }
                         pPlayer->footprintpal                  = (sector[pPlayer->cursectnum].floorpicnum == FLOORSLIME) ? 8 : 0;
                         pPlayer->footprintshade                = 0;
                     }
@@ -5526,6 +5524,13 @@ void P_ProcessInput(int playerNum)
     if (!FURY && playerShrunk && pPlayer->jetpack_on == 0 && sectorLotag != ST_2_UNDERWATER && sectorLotag != ST_1_ABOVE_WATER)
         pPlayer->pos.z += ZOFFSET5 - (sprite[pPlayer->i].yrepeat<<8);
 #endif
+
+#ifdef AMC_BUILD
+    // Update pos.z before clipmove() during sliding to enable old sliding behavior in AMC TC
+    if (playerSlide && !pPlayer->jetpack_on && sectorLotag != ST_2_UNDERWATER)
+        pPlayer->pos.z += pPlayer->vel.z;
+#endif
+
 HORIZONLY:;
     if (ud.noclip)
     {
@@ -5558,10 +5563,17 @@ HORIZONLY:;
 
         P_ClampZ(pPlayer, sectorLotag, ceilZ, floorZ);
 
+#ifdef AMC_BUILD
+        int const touchObject = playerSlide ? clipmove(&pPlayer->pos, &pPlayer->cursectnum, pPlayer->vel.x, pPlayer->vel.y, pPlayer->clipdist,
+                                                   (4L << 8), getZRangeOffset, CLIPMASK0)
+                                             : clipmove(&pPlayer->pos, &pPlayer->cursectnum, pPlayer->vel.x, pPlayer->vel.y, pPlayer->clipdist,
+                                                    (4L << 8), stepHeight, CLIPMASK0);
+#else
         int const touchObject = FURY ? clipmove(&pPlayer->pos, &pPlayer->cursectnum, pPlayer->vel.x + (pPlayer->fric.x << 9),
                                                    pPlayer->vel.y + (pPlayer->fric.y << 9), pPlayer->clipdist, (4L << 8), stepHeight, CLIPMASK0)
                                         : clipmove(&pPlayer->pos, &pPlayer->cursectnum, pPlayer->vel.x, pPlayer->vel.y, pPlayer->clipdist,
                                                    (4L << 8), stepHeight, CLIPMASK0);
+#endif
 
         if (touchObject)
             P_CheckTouchDamage(pPlayer, touchObject);
@@ -5583,9 +5595,13 @@ HORIZONLY:;
         }
         else if (sectorLotag != ST_2_UNDERWATER && sectorLotag != ST_1_ABOVE_WATER)
             pPlayer->pyoff = 0;
-
+#ifdef AMC_BUILD
+        if (!playerSlide && sectorLotag != ST_2_UNDERWATER)
+            pPlayer->pos.z += pPlayer->vel.z;
+#else
         if (sectorLotag != ST_2_UNDERWATER)
             pPlayer->pos.z += pPlayer->vel.z;
+#endif
     }
 
     P_ClampZ(pPlayer, sectorLotag, ceilZ, floorZ);

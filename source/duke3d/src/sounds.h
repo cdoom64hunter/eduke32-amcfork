@@ -35,11 +35,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 extern "C" {
 #endif
 
-#define MAXSOUNDS           4096
+#define MAXSOUNDS           8192
 #define MAXSOUNDINSTANCES   8
 #define LOUDESTVOLUME       111
 #define MUSIC_ID            -65536
 #define MAXVOICES           128
+#define CON_MAXSOUNDVOLUME  16384
 
 typedef struct
 {
