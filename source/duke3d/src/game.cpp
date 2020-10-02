@@ -5685,6 +5685,7 @@ static int parsedefinitions_game(scriptfile *pScript, int firstPass)
                             initprintf("Error: Maximum choices exceeded near line %s:%d\n",
                                 pScript->filename, scriptfile_getlinum(pScript, choicePtr));
                             pScript->textptr = choiceEnd+1;
+                            break;
                         }
 
                         MenuGameplayStemEntry & stem = g_MenuGameplayEntries[choiceID];
@@ -5710,6 +5711,7 @@ static int parsedefinitions_game(scriptfile *pScript, int firstPass)
                                         initprintf("Error: Maximum subchoices exceeded near line %s:%d\n",
                                             pScript->filename, scriptfile_getlinum(pScript, subChoicePtr));
                                         pScript->textptr = subChoiceEnd+1;
+                                        break;
                                     }
 
                                     MenuGameplayEntry & subentry = stem.subentries[subChoiceID];
