@@ -48,6 +48,8 @@ enum
     LABEL_ANY    = -1,
 };
 
+#define MAXLABELS 32768
+
 #define LABEL_CHAR sizeof(uint8_t)
 #define LABEL_SHORT sizeof(uint16_t)
 #define LABEL_INT sizeof(uint32_t)

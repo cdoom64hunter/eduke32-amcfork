@@ -6283,9 +6283,7 @@ static char const * C_ScriptVersionString(int32_t version)
 
 void C_PrintStats(void)
 {
-    initprintf("%d/%d labels, %d/%d variables, %d/%d arrays\n", g_labelCnt,
-        (int32_t) min((MAXSECTORS * sizeof(sectortype)/sizeof(int32_t)),
-            MAXSPRITES * sizeof(spritetype)/(1<<6)),
+    initprintf("%d/%d labels, %d/%d variables, %d/%d arrays\n", g_labelCnt, MAXLABELS,
         g_gameVarCount, MAXGAMEVARS, g_gameArrayCount, MAXGAMEARRAYS);
 
     int cnt = g_numXStrings;
