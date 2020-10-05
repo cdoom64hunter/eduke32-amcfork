@@ -5954,8 +5954,8 @@ static void G_Cleanup(void)
     for (i=MAXSOUNDS-1; i>=0; i--)
         Xfree(g_sounds[i].filename);
 
-    if (label != (char *)&sprite[0]) Xfree(label);
-    if (labelcode != (int32_t *)&sector[0]) Xfree(labelcode);
+    Xfree(label);
+    Xfree(labelcode);
     Xfree(apScript);
     Xfree(bitptr);
 
@@ -6016,7 +6016,6 @@ static void G_CompileScripts(void)
     if (g_scriptNamePtr != NULL)
         Bcorrectfilename(g_scriptNamePtr,0);
 
-    // if we compile for a V7 engine wall[] should be used for label names since it's bigger
     pathsearchmode = 1;
 
     C_Compile(G_ConFile());
@@ -6024,6 +6023,7 @@ static void G_CompileScripts(void)
     if (g_loadFromGroupOnly) // g_loadFromGroupOnly is true only when compiling fails and internal defaults are utilized
         C_Compile(G_ConFile());
 
+    // for safety
     if ((uint32_t)g_labelCnt >= MAXLABELS)
         G_GameExit("Error: too many labels defined!");
 
